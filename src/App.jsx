@@ -22,15 +22,13 @@ function App() {
      *  goalX: number,
      *  goalY: number,
      *  drawing: boolean
+     *  path: Array<Array<number>>
      * }>}
      */
     let CorrectionHandlerList = []
     let cursor = -1;
-    let correctionPower = 20;
-    let mouse = {
-      x: 0,
-      y: 0,
-    }
+    let correctionPower = 40;
+    let pathList = [];
 
     ctx.lineCap = 'round';
     ctx.lineJoin = 'round';
@@ -61,7 +59,8 @@ function App() {
           y: e.clientY,
           goalX: e.clientX,
           goalY: e.clientY,
-          drawing: true
+          drawing: true,
+          path: []
         }
       );
       mousePressed = true
@@ -79,12 +78,25 @@ function App() {
     })
     setInterval(() => {
       for (let i = 0; i < CorrectionHandlerList.length; i++) {
-        let before = {
-          x: CorrectionHandlerList[i].x,
-          y: CorrectionHandlerList[i].y,
-        };  
+        // let before = {
+        //   x: CorrectionHandlerList[i].x,
+        //   y: CorrectionHandlerList[i].y,
+        // };
+        CorrectionHandlerList[i].path.push([CorrectionHandlerList[i].x, CorrectionHandlerList[i].y]);
+        
+        let path = CorrectionHandlerList[i].path;
+        ctx.beginPath();
+        ctx.moveTo(path[0][0] * DIVSIZE, path[0][1] * DIVSIZE);
+        for (let j = 1; j < path.length-1; j++) {
+          ctx.quadraticCurveTo(path[j][0] * DIVSIZE, path[j][1] * DIVSIZE, path[j+1][0] * DIVSIZE, path[j+1][1] * DIVSIZE);
+        }
+        ctx.stroke();
+        ctx.closePath();
+        
         CorrectionHandlerList[i].x += (CorrectionHandlerList[i].goalX - CorrectionHandlerList[i].x) / correctionPower;
         CorrectionHandlerList[i].y += (CorrectionHandlerList[i].goalY - CorrectionHandlerList[i].y) / correctionPower;
+        // CorrectionHandlerList[i].x = CorrectionHandlerList[i].goalX;
+        // CorrectionHandlerList[i].y = CorrectionHandlerList[i].goalY;
   
         const DISTANCE = 0.1;
         console.log(
@@ -92,19 +104,36 @@ function App() {
           CorrectionHandlerList[i].goalY - CorrectionHandlerList[i].y
         )
         if (Math.abs(CorrectionHandlerList[i].goalX - CorrectionHandlerList[i].x) > DISTANCE || Math.abs(CorrectionHandlerList[i].goalY - CorrectionHandlerList[i].y) > DISTANCE) {
-          ctx.beginPath();
-          ctx.moveTo(before.x * DIVSIZE, before.y * DIVSIZE);
-          ctx.lineTo(CorrectionHandlerList[i].x * DIVSIZE, CorrectionHandlerList[i].y * DIVSIZE);
-          ctx.stroke();
-          ctx.closePath();
+          // ctx.beginPath();
+          // ctx.moveTo(before.x * DIVSIZE, before.y * DIVSIZE);
+          // ctx.quadraticCurveTo(
+          //   CorrectionHandlerList[i].x * DIVSIZE, CorrectionHandlerList[i].y * DIVSIZE,
+          //   (CorrectionHandlerList[i].x + (CorrectionHandlerList[i].goalX - CorrectionHandlerList[i].x) / correctionPower) * DIVSIZE,
+          //   (CorrectionHandlerList[i].y + (CorrectionHandlerList[i].goalY - CorrectionHandlerList[i].y) / correctionPower) * DIVSIZE
+          // );
+
+          // ctx.stroke();
+          // ctx.closePath();
         }else {
           if (!CorrectionHandlerList[i].drawing) {
+            pathList.push(CorrectionHandlerList[i].path);
             CorrectionHandlerList.splice(i, 1);
             cursor--;
           }
         }
       }
-    }, 1000 / 120)
+    })
+    setInterval(() => {
+      ctx.clearRect(0, 0, canv.current.width, canv.current.height); 
+      pathList.forEach(path => {
+        ctx.beginPath();
+        ctx.moveTo(path[0][0] * DIVSIZE, path[0][1] * DIVSIZE);
+        for (let i = 1; i < path.length-1; i++) {
+          ctx.quadraticCurveTo(path[i][0] * DIVSIZE, path[i][1] * DIVSIZE, path[i+1][0] * DIVSIZE, path[i+1][1] * DIVSIZE);
+        }
+        ctx.stroke();
+        ctx.closePath();
+    })}, 1000)
 
   }, [])
   return (
